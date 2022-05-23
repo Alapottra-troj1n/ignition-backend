@@ -100,6 +100,34 @@ const run = async () => {
             res.send(result);
 
         })
+        app.get('/myorders',verifyJWT, async (req, res) => {
+            const decoded = req.decoded.email;
+            const email = req.query.email;
+            if(decoded !== email){
+                return res.status(401).send({message: 'forbidden access'})
+            }
+            
+            const query = {email : email}
+            const result = await orderCollection.find(query).toArray();
+            res.send(result);
+
+        })
+        
+        //delete a order 
+        app.delete('/order/:id',async(req,res) => {
+            const orderId = req.params.id;
+            console.log(orderId);
+            const query = {_id: ObjectId(orderId)};
+            const result = await orderCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        //add a review
+        app.post('/addreview', async(req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(result);
+        })
 
 
 

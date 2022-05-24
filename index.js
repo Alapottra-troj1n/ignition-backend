@@ -128,6 +128,54 @@ const run = async () => {
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
+        //get user
+        app.get('/getuser',verifyJWT, async(req, res) => {
+            const email = req.query.email;
+            const decoded = req.decoded.email;
+
+            if(email !== decoded){
+                return res.status(401).send({message : 'access denied'})
+                
+            }else{
+                const query = {email : email};
+                const result = await userCollection.findOne(query);
+                res.send(result);
+            }  
+
+        })
+
+
+       app.put('/updateprofile',verifyJWT, async(req, res)=>{
+
+        const email = req.query.email; 
+        const decoded = req.decoded.email;
+        const moreDetails = req.body;
+
+        if(email !== decoded){
+            return res.status(401).send({message : 'forbidden access'})
+        }else{
+
+            const filter = { email:email };
+            const options = { upsert: false };
+
+            const updatedDoc = {
+                $set: {
+                    moreDetails
+                }
+            };
+
+            const result = await userCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+
+        }
+        
+
+
+       })
+
+
+
+      
 
 
 

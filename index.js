@@ -47,6 +47,22 @@ const run = async () => {
         const reviewCollection = database.collection('reviews');
         const orderCollection = database.collection('orders');
 
+        const verifyAdmin = async (req, res, next) => {
+            const requester = req.decoded.email;
+            console.log(requester);
+            const requesterAccount = await userCollection.findOne({ email: requester });
+            if (requesterAccount.isAdmin === true) {
+              next();
+            }
+            else {
+              res.status(403).send({ message: 'forbidden' });
+            }
+          }
+
+
+
+
+
         app.put('/user/:email', async (req, res) => {
             const email = req.params.email;
             const user = req.body;
@@ -172,6 +188,64 @@ const run = async () => {
 
 
        })
+
+       //admin routes 
+
+
+       //manage all orders
+       app.get('/allorders', verifyJWT,verifyAdmin, async(req,res) =>{
+
+            const email = req.query.email;
+            const decoded = req.decoded.email;
+            if(email !== decoded){
+                return res.status(401).send({message : 'access denied'})
+            }else{
+
+                const query = {};
+                const result = await orderCollection.find(query).toArray();
+                res.send(result);
+
+            }
+
+       })
+
+       app.post('/addproduct', verifyJWT,verifyAdmin, async(req,res) =>{
+
+       const email = req.query.email;
+
+       const decoded = req.decoded.email;
+       if(email !== decoded){
+           return res.status(401).send({message : 'access denied'})
+       }else{
+
+            const product = req.body;
+            const result = await productCollection.insertOne(product);
+            res.send(result);
+
+       }
+
+       })
+
+       app.get('/allusers',verifyJWT, verifyAdmin, async(req,res) =>{
+           const email = req.query.email;
+           const decoded = req.decoded.email;
+           if(email !== decoded){
+               return res.status(401).send({message : 'access denied'})
+           }else{
+            const query = {isAdmin : undefined}
+            const result = await userCollection.find(query).toArray();
+            res.send(result);
+
+
+
+           }
+        
+
+
+       })
+
+
+
 
 
 

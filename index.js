@@ -17,13 +17,13 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 //JWT Verify
 function verifyJWT(req, res, next) {
     const authHeader = req.headers.authorization;
-    if(!authHeader){
-        return res.status(401).send({message : 'unauthorized access'});
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' });
     }
     const token = authHeader.split(' ')[1];
-    jwt.verify(token, process.env.TOKEN_SECRET, function(err, decoded){
-        if(err){
-            return res.status(403).send({message : 'forbidden access'})
+    jwt.verify(token, process.env.TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({ message: 'forbidden access' })
         }
         req.decoded = decoded;
         next();
@@ -52,12 +52,12 @@ const run = async () => {
             console.log(requester);
             const requesterAccount = await userCollection.findOne({ email: requester });
             if (requesterAccount.isAdmin === true) {
-              next();
+                next();
             }
             else {
-              res.status(403).send({ message: 'forbidden' });
+                res.status(403).send({ message: 'forbidden' });
             }
-          }
+        }
 
 
 
@@ -92,7 +92,7 @@ const run = async () => {
         })
         app.get('/product/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id:ObjectId(id)}
+            const query = { _id: ObjectId(id) }
             const results = await productCollection.findOne(query);
             res.send(results);
 
@@ -102,7 +102,7 @@ const run = async () => {
         app.post('/addorder', async (req, res) => {
             const order = req.body;
             const productName = order.product;
-            const filter = {name:productName}
+            const filter = { name: productName }
             const orderProduct = await productCollection.findOne(filter);
             const updatedQuantity = orderProduct.availableQuantity - order.quantity;
             const updatedDoc = {
@@ -116,90 +116,90 @@ const run = async () => {
             res.send(result);
 
         })
-        app.get('/myorders',verifyJWT, async (req, res) => {
+        app.get('/myorders', verifyJWT, async (req, res) => {
             const decoded = req.decoded.email;
             const email = req.query.email;
-            if(decoded !== email){
-                return res.status(401).send({message: 'forbidden access'})
+            if (decoded !== email) {
+                return res.status(401).send({ message: 'forbidden access' })
             }
-            
-            const query = {email : email}
+
+            const query = { email: email }
             const result = await orderCollection.find(query).toArray();
             res.send(result);
 
         })
-        
+
         //delete a order 
-        app.delete('/order/:id',async(req,res) => {
+        app.delete('/order/:id', async (req, res) => {
             const orderId = req.params.id;
             console.log(orderId);
-            const query = {_id: ObjectId(orderId)};
+            const query = { _id: ObjectId(orderId) };
             const result = await orderCollection.deleteOne(query);
             res.send(result);
         })
 
         //add a review
-        app.post('/addreview', async(req, res) => {
+        app.post('/addreview', async (req, res) => {
             const review = req.body;
             const result = await reviewCollection.insertOne(review);
             res.send(result);
         })
         //get user
-        app.get('/getuser',verifyJWT, async(req, res) => {
+        app.get('/getuser', verifyJWT, async (req, res) => {
             const email = req.query.email;
             const decoded = req.decoded.email;
 
-            if(email !== decoded){
-                return res.status(401).send({message : 'access denied'})
-                
-            }else{
-                const query = {email : email};
+            if (email !== decoded) {
+                return res.status(401).send({ message: 'access denied' })
+
+            } else {
+                const query = { email: email };
                 const result = await userCollection.findOne(query);
                 res.send(result);
-            }  
+            }
 
         })
 
 
-       app.put('/updateprofile',verifyJWT, async(req, res)=>{
-
-        const email = req.query.email; 
-        const decoded = req.decoded.email;
-        const moreDetails = req.body;
-
-        if(email !== decoded){
-            return res.status(401).send({message : 'forbidden access'})
-        }else{
-
-            const filter = { email:email };
-            const options = { upsert: false };
-
-            const updatedDoc = {
-                $set: {
-                    moreDetails
-                }
-            };
-
-            const result = await userCollection.updateOne(filter, updatedDoc, options);
-            res.send(result);
-
-        }
-        
-
-
-       })
-
-       //admin routes 
-
-
-       //manage all orders
-       app.get('/allorders', verifyJWT,verifyAdmin, async(req,res) =>{
+        app.put('/updateprofile', verifyJWT, async (req, res) => {
 
             const email = req.query.email;
             const decoded = req.decoded.email;
-            if(email !== decoded){
-                return res.status(401).send({message : 'access denied'})
-            }else{
+            const moreDetails = req.body;
+
+            if (email !== decoded) {
+                return res.status(401).send({ message: 'forbidden access' })
+            } else {
+
+                const filter = { email: email };
+                const options = { upsert: false };
+
+                const updatedDoc = {
+                    $set: {
+                        moreDetails
+                    }
+                };
+
+                const result = await userCollection.updateOne(filter, updatedDoc, options);
+                res.send(result);
+
+            }
+
+
+
+        })
+
+        //admin routes 
+
+
+        //manage all orders
+        app.get('/allorders', verifyJWT, verifyAdmin, async (req, res) => {
+
+            const email = req.query.email;
+            const decoded = req.decoded.email;
+            if (email !== decoded) {
+                return res.status(401).send({ message: 'access denied' })
+            } else {
 
                 const query = {};
                 const result = await orderCollection.find(query).toArray();
@@ -207,49 +207,94 @@ const run = async () => {
 
             }
 
-       })
+        })
 
-       app.post('/addproduct', verifyJWT,verifyAdmin, async(req,res) =>{
+        //add a product
+        app.post('/addproduct', verifyJWT, verifyAdmin, async (req, res) => {
 
-       const email = req.query.email;
+            const email = req.query.email;
 
-       const decoded = req.decoded.email;
-       if(email !== decoded){
-           return res.status(401).send({message : 'access denied'})
-       }else{
+            const decoded = req.decoded.email;
+            if (email !== decoded) {
+                return res.status(401).send({ message: 'access denied' })
+            } else {
 
-            const product = req.body;
-            const result = await productCollection.insertOne(product);
-            res.send(result);
+                const product = req.body;
+                const result = await productCollection.insertOne(product);
+                res.send(result);
 
-       }
+            }
 
-       })
+        })
 
-       app.get('/allusers',verifyJWT, verifyAdmin, async(req,res) =>{
-           const email = req.query.email;
-           const decoded = req.decoded.email;
-           if(email !== decoded){
-               return res.status(401).send({message : 'access denied'})
-           }else{
-            const query = {isAdmin : undefined}
-            const result = await userCollection.find(query).toArray();
-            res.send(result);
-
-
-
-           }
-        
-
-
-       })
+        //get all users
+        app.get('/allusers', verifyJWT, verifyAdmin, async (req, res) => {
+            const email = req.query.email;
+            const decoded = req.decoded.email;
+            if (email !== decoded) {
+                return res.status(401).send({ message: 'access denied' })
+            } else {
+                const query = { isAdmin: undefined }
+                const result = await userCollection.find(query).toArray();
+                res.send(result);
 
 
 
+            }
 
 
 
-      
+        })
+
+        //make admin
+        app.put('/makeadmin', verifyJWT, verifyAdmin, async (req, res) => {
+            const email = req.query.email;
+            const decoded = req.decoded.email;
+            const adminEmail = req.body.adminEmail;
+            if (adminEmail !== decoded) {
+                return res.status(401).send({ message: 'access denied' })
+            } else {
+
+
+                const filter = { email: email };
+                const options = { upsert: false };
+
+                const updatedDoc = {
+                    $set: {
+                        isAdmin:true
+                    }
+                };
+
+                const result = await userCollection.updateOne(filter, updatedDoc, options);
+                res.send(result);
+
+            }
+
+
+        })
+
+        //get all products 
+        app.get('/allproducts', verifyJWT, verifyAdmin, async (req, res) =>{
+            const email = req.query.email;
+            const decoded = req.decoded.email;
+            if(email !== decoded){
+                return res.status(401).send({ message: 'access denied' })
+            }else{
+
+                const query = {}
+                const result = await productCollection.find(query).toArray();
+                res.send(result);
+
+            }
+
+        })
+
+
+
+
+
+
+
 
 
 

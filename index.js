@@ -4,6 +4,7 @@ require('dotenv').config();
 const port = process.env.PORT || 5000;
 const app = express();
 const jwt = require('jsonwebtoken');
+const stripe = require('stripe')(process.env.STRIPE_KEY);
 
 //middlewares 
 app.use(cors());
@@ -46,6 +47,7 @@ const run = async () => {
         const userCollection = database.collection('users');
         const reviewCollection = database.collection('reviews');
         const orderCollection = database.collection('orders');
+        const paymentCollection = database.collection('payments');
 
         const verifyAdmin = async (req, res, next) => {
             const requester = req.decoded.email;
@@ -288,6 +290,65 @@ const run = async () => {
             }
 
         })
+
+        //get a specific order 
+        app.get('/order/payment/:id',async(req, res) =>{
+            const id = req.params.id;
+            const query = { _id: ObjectId(id)};
+            const result = await orderCollection.findOne(query);
+            res.send(result);
+
+
+        })
+
+
+
+        //stripe
+        app.post('/create-payment-intent',verifyJWT, async (req, res)=>{
+            const price = req.body.price;
+            const amount = price * 100;
+            if(amount){
+                const paymentIntent = await stripe.paymentIntents.create({
+                    amount : parseInt(amount),
+                    currency : 'usd',
+                    payment_method_types:['card']
+                });
+                res.send({clientSecret : paymentIntent.client_secret})
+
+            }
+          
+
+
+        })
+
+
+        app.patch('/order/:id',verifyJWT, async (req, res)=>{
+            const id = req.params.id;
+            const payment = req.body;
+            const query = { _id: ObjectId(id)};
+            const updatedDoc = {
+                $set:{
+                    paid:true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedOrder = await orderCollection.updateOne(query, updatedDoc)
+            const result = await paymentCollection.insertOne(payment);
+            res.send(updatedOrder);
+
+
+        })
+
+        //delete a product 
+        app.delete('/product/:id',verifyJWT, verifyAdmin, async(req, res)=>{
+            const id = req.params.id;
+            const query = { _id: ObjectId(id)}
+            const result = await productCollection.deleteOne(query);
+            res.send(result)
+
+
+        })
+        
 
 
 

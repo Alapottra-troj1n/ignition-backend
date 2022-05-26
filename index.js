@@ -348,6 +348,24 @@ const run = async () => {
 
 
         })
+
+        //ship
+        app.put('/ship/:id', verifyJWT, async(req, res)=>{
+
+            const id = req.params.id;
+            const status = req.body.status;
+            console.log(status)
+            const query = {_id: ObjectId(id)}
+            const updatedDoc = {
+                $set:{
+                   status
+                }
+            }
+            const updatedOrder = await orderCollection.updateOne(query, updatedDoc)
+            res.send(updatedOrder);
+
+
+        })
         
 
 
